@@ -1,7 +1,13 @@
 package com.example.tablereservation;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
+
+import android.app.DatePickerDialog;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,10 +16,9 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -21,44 +26,27 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Locale;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+public class GardenView extends AppCompatActivity {
 
-public class SeaView extends AppCompatActivity {
-
-    private EditText etCustomerName, etMeal, etSeatingArea, etCustomerPhoneNumber, etTableSize, etDate;
+    private EditText etCustomerName, etMeal, etCustomerPhoneNumber, etTableSize, etDate;
     private Button btnBook;
-
-    private ReservationApiService reservationApiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sea_view);
+        setContentView(R.layout.activity_garden_view);
 
-        // Initialize UI elements
         etCustomerName = findViewById(R.id.etCustomerName);
         etMeal = findViewById(R.id.etMeal);
-        etSeatingArea = findViewById(R.id.atSeatingArea);
+
         etCustomerPhoneNumber = findViewById(R.id.etCustomerPhoneNumber);
         etTableSize = findViewById(R.id.etTableSize);
         etDate = findViewById(R.id.etDate);
         btnBook = findViewById(R.id.btnBook);
 
-        // Set up Retrofit for making API requests
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        reservationApiService = retrofit.create(ReservationApiService.class);
-
-        // Set click listener for the date field
+        // Set OnClickListener for the Date EditText to show DatePickerDialog
         etDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -66,72 +54,45 @@ public class SeaView extends AppCompatActivity {
             }
         });
 
-        // Set click listener for the book button
+        // Set OnClickListener for the Book Button
         btnBook.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Perform POST request with user input
                 saveReservationData();
             }
         });
     }
 
+    // Method to show DatePickerDialog
     private void showDatePickerDialog() {
-        DatePickerFragment datePickerFragment = new DatePickerFragment();
-        datePickerFragment.show(getSupportFragmentManager(), "datePicker");
+        Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                        Calendar selectedDate = Calendar.getInstance();
+                        selectedDate.set(year, monthOfYear, dayOfMonth);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        etDate.setText(sdf.format(selectedDate.getTime()));
+                    }
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+        datePickerDialog.show();
     }
 
-    public void updateDateField(int year, int month, int day) {
-        // Format the date as "YYYY-MM-DD"
-        String formattedDate = String.format("%04d-%02d-%02d", year, month + 1, day);
-        etDate.setText(formattedDate);
-    }
-
-    private void postDataToApi() {
-        // Retrieve data from EditText fields
-        String customerName = etCustomerName.getText().toString();
-        String meal = etMeal.getText().toString();
-        String seatingArea = "Sea View Outside";
-        String customerPhoneNumber = etCustomerPhoneNumber.getText().toString();
-        String tableSize = etTableSize.getText().toString();
-        String date = etDate.getText().toString();
-
-        // Validate input data before posting to API
-        if (customerName.isEmpty() || meal.isEmpty() || seatingArea.isEmpty() ||
-                customerPhoneNumber.isEmpty() || tableSize.isEmpty() || date.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Create a Reservation object with the input data
-        Reservation reservation = new Reservation(customerName, customerPhoneNumber, meal, seatingArea, tableSize, date);
-
-        // Make a network request to post data to the API
-        Call<Void> call = reservationApiService.postReservation(reservation);
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(SeaView.this, "Reservation successful", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(SeaView.this, "Failed to make reservation. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(SeaView.this, "Failed to make reservation. Please try again.", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-    }
+    // AsyncTask to perform the POST request in the background
     private void saveReservationData() {
         String customerName = etCustomerName.getText().toString();
         String meal = etMeal.getText().toString();
-        String seatingArea = "Sea View Outside";
+        String seatingArea = "Garden View Outside";
         String customerPhoneNumber = etCustomerPhoneNumber.getText().toString();
         String tableSize = etTableSize.getText().toString();
         String date = etDate.getText().toString();
-
 
 
         // Create a JSON object with the data
@@ -143,8 +104,6 @@ public class SeaView extends AppCompatActivity {
             reservationData.put("seatingArea", seatingArea);
             reservationData.put("tableSize", tableSize);
             reservationData.put("date", date);
-
-
 
 
         } catch (JSONException e) {
@@ -159,9 +118,6 @@ public class SeaView extends AppCompatActivity {
         editor.putString("seatingArea", seatingArea);
         editor.putString("tableSize", tableSize);
         editor.putString("date", date);
-
-
-
 
 
         editor.apply();
@@ -194,17 +150,17 @@ public class SeaView extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(SeaView.this, "Reservation successful", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(GardenView.this, "Reservation successful", Toast.LENGTH_SHORT).show();
                             }
                         });
                         // Redirect to DashboardActivity
-                        Intent intent = new Intent(SeaView.this, BookNow.class);
+                        Intent intent = new Intent(GardenView.this, BookNow.class);
                         startActivity(intent);
                     } else {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(SeaView.this, "Failed to make reservation. Please try again.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(GardenView.this, "Failed to make reservation. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
@@ -215,5 +171,5 @@ public class SeaView extends AppCompatActivity {
             }
         });
         thread.start();
-}
+    }
 }
