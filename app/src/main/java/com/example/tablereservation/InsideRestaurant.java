@@ -2,6 +2,8 @@ package com.example.tablereservation;
 
 import static androidx.core.content.ContentProviderCompat.requireContext;
 
+import static com.example.tablereservation.MainActivity.redirectActivity;
+
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -41,6 +44,8 @@ public class InsideRestaurant extends AppCompatActivity {
     private Spinner spinnerNoOfPax, spinnerMealPreference;
     private Button btnBook;
 
+    private ImageButton btnBack;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +59,15 @@ public class InsideRestaurant extends AppCompatActivity {
         etTableSize = findViewById(R.id.etTableSize);
         etDate = findViewById(R.id.etDate);
         btnBook = findViewById(R.id.btnBook);
+        btnBack.findViewById(R.id.btnBackInside);
+
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                redirectActivity(InsideRestaurant.this, BookNow.class);
+            }
+        });
+
 
         // Set up Retrofit for making API requests
         Retrofit retrofit = new Retrofit.Builder()

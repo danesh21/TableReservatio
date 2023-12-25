@@ -1,5 +1,7 @@
 package com.example.tablereservation;
 
+import static com.example.tablereservation.MainActivity.redirectActivity;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,6 +36,8 @@ public class GardenView extends AppCompatActivity {
     private EditText etCustomerName, etMeal, etCustomerPhoneNumber, etTableSize, etDate;
     private Button btnBook;
 
+    private ImageButton btnBack;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,6 +50,14 @@ public class GardenView extends AppCompatActivity {
         etTableSize = findViewById(R.id.etTableSize);
         etDate = findViewById(R.id.etDate);
         btnBook = findViewById(R.id.btnBook);
+        btnBack=findViewById(R.id.btnBackGardenBook);
+
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                redirectActivity(GardenView.this, BookNow.class);
+            }
+        });
 
         // Set OnClickListener for the Date EditText to show DatePickerDialog
         etDate.setOnClickListener(new View.OnClickListener() {
