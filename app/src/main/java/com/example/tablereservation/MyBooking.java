@@ -1,10 +1,14 @@
 package com.example.tablereservation;
 
+// Import statements
+// ...
+
 import static com.example.tablereservation.MainActivity.redirectActivity;
 
-import androidx.appcompat.app.AppCompatActivity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
@@ -13,9 +17,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +31,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MyBooking extends AppCompatActivity {
 
@@ -36,7 +46,7 @@ public class MyBooking extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_booking);
-        btnBack=findViewById(R.id.btnDirectMainPage);
+        btnBack = findViewById(R.id.btnDirectMainPage);
 
         btnBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -58,6 +68,30 @@ public class MyBooking extends AppCompatActivity {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 showDeleteConfirmationDialog(position);
                 return true; // Consume the long click event
+            }
+        });
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Get the selected reservation data
+                String selectedReservation = resultList.get(position);
+
+                // Store the selected reservation data in SharedPreferences
+                SharedPreferences preferences = getSharedPreferences("selected_reservation", MODE_PRIVATE);
+                String customerName = preferences.getString("customerName", "");
+                String customerPhoneNumber = preferences.getString("customerPhoneNumber", "");
+                String meal = preferences.getString("meal", "");
+                String seatingArea = preferences.getString("seatingArea", "");
+                String tableSize = preferences.getString("tableSize", "");
+                String date = preferences.getString("date", "");
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putString("selectedReservation", selectedReservation);
+                editor.apply();
+
+                // Start the EditReservation activity
+                Intent intent = new Intent(MyBooking.this, EditReservation.class);
+                startActivity(intent);
             }
         });
     }
@@ -93,15 +127,24 @@ public class MyBooking extends AppCompatActivity {
                 JSONArray jsonArray = new JSONArray(jsonResponse);
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    // Customize this part based on your JSON structure
                     String customerName = jsonObject.getString("customerName");
                     String customerPhoneNumber = jsonObject.getString("customerPhoneNumber");
                     String meal = jsonObject.getString("meal");
                     String seatingArea = jsonObject.getString("seatingArea");
-                    resultList.add("Customer Name: " + customerName + "\n" +
-                            "Phone Number: " + customerPhoneNumber + "\n" +
-                            "Meal: " + meal + "\n" +
-                            "Seating Area: " + seatingArea);
+                    String tableSize = jsonObject.getString("tableSize");
+                    String date = jsonObject.getString("date");
+
+                    // Add a map to store key-value pairs for each field
+                    Map<String, String> bookingData = new HashMap<>();
+                    bookingData.put("customerName", customerName);
+                    bookingData.put("customerPhoneNumber", customerPhoneNumber);
+                    bookingData.put("meal", meal);
+                    bookingData.put("seatingArea", seatingArea);
+                    bookingData.put("tableSize", tableSize);
+                    bookingData.put("date", date);
+
+                    // Add the map to the resultList
+                    resultList.add(bookingData.toString());
                 }
 
             } catch (IOException | JSONException e) {
@@ -118,7 +161,7 @@ public class MyBooking extends AppCompatActivity {
             resultList = result;
 
             // Populate the ListView with the fetched data
-            adapter = new ArrayAdapter<>(MyBooking.this, android.R.layout.simple_list_item_1, resultList);
+            adapter = new ArrayAdapter<>(MyBooking.this, R.layout.list_reservation_item,R.id.textViewCustomerName,  resultList);
             listView.setAdapter(adapter);
         }
     }

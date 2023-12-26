@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/main_blue"
+    android:backgroundTint="@color/blue"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/textViewCustomerName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Customer Name : " />
+
+    <TextView
+        android:id="@+id/textViewPhoneNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Phone Number : " />
+
+    <TextView
+        android:id="@+id/textViewMeal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Meal " />
+
+    <TextView
+        android:id="@+id/textViewSeatingArea"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Seating Area : " />
+
+    <TextView
+        android:id="@+id/textViewTableSize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Table Size : " />
+
+    <TextView
+        android:id="@+id/textViewDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Date : " />
+
+    <!-- Add more TextViews for other booking details -->
+
+</LinearLayout>
