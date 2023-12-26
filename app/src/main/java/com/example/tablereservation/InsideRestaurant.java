@@ -28,9 +28,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -40,9 +42,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class InsideRestaurant extends AppCompatActivity {
 
-    private EditText etCustomerName, etMeal, etSeatingArea,etCustomerPhoneNumber,etTableSize,etDate;
-    private Spinner spinnerNoOfPax, spinnerMealPreference;
+    private EditText etCustomerName, etCustomerPhoneNumber, etDate;
     private Button btnBook;
+
+    private Spinner spMealInside,spTableSizeInside;
 
     private ImageButton btnBack;
 
@@ -51,15 +54,16 @@ public class InsideRestaurant extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inside_restaurant);
 
-        // Initialize UI elements
         etCustomerName = findViewById(R.id.etCustomerName);
-        etMeal = findViewById(R.id.etMeal);
-        etSeatingArea = findViewById(R.id.atSeatingArea);
         etCustomerPhoneNumber = findViewById(R.id.etCustomerPhoneNumber);
-        etTableSize = findViewById(R.id.etTableSize);
         etDate = findViewById(R.id.etDate);
+        spMealInside=findViewById(R.id.spinnerMealPreference);
+        spTableSizeInside=findViewById(R.id.spinnerTableSize);
         btnBook = findViewById(R.id.btnBook);
-        btnBack.findViewById(R.id.btnBackInside);
+        btnBack=findViewById(R.id.btnBackInside);
+
+        setUpNoOfPaxSpinner();
+        setUpMealPreferenceSpinner();
 
         btnBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,16 +72,7 @@ public class InsideRestaurant extends AppCompatActivity {
             }
         });
 
-
-        // Set up Retrofit for making API requests
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ReservationApiService reservationApiService = retrofit.create(ReservationApiService.class);
-
-        // Set click listener for the date field
+        // Set OnClickListener for the Date EditText to show DatePickerDialog
         etDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -85,34 +80,104 @@ public class InsideRestaurant extends AppCompatActivity {
             }
         });
 
-        // Set click listener for the book button
+        // Set OnClickListener for the Book Button
         btnBook.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Perform POST request with user input
                 saveReservationData();
             }
         });
     }
 
-    private void showDatePickerDialog() {
-        DatePickerFragment datePickerFragment = new DatePickerFragment();
-        datePickerFragment.show(getSupportFragmentManager(), "datePicker");
+    private void setUpNoOfPaxSpinner() {
+        List<String> paxList = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            paxList.add(String.valueOf(i));
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, paxList
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spTableSizeInside.setAdapter(adapter);
+
+        // Set a listener to handle item selection
+        spTableSizeInside.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                // Handle the selected number of pax
+                String selectedPax = parentView.getItemAtPosition(position).toString();
+                // You can use selectedPax as needed
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // Do nothing here
+            }
+        });
     }
 
-    public void updateDateField(int year, int month, int day) {
-        // Format the date as "YYYY-MM-DD"
-        String formattedDate = String.format("%04d-%02d-%02d", year, month + 1, day);
-        etDate.setText(formattedDate);
+    // Method to set up the Spinner for selecting meal preference
+    private void setUpMealPreferenceSpinner() {
+        List<String> mealPreferences = new ArrayList<>();
+        mealPreferences.add("Breakfast");
+        mealPreferences.add("Lunch");
+        mealPreferences.add("Dinner");
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, mealPreferences
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spMealInside.setAdapter(adapter);
+
+        // Set a listener to handle item selection
+        spMealInside.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                // Handle the selected meal preference
+                String selectedMeal = parentView.getItemAtPosition(position).toString();
+                // You can use selectedMeal as needed
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // Do nothing here
+            }
+        });
     }
-    
+
+    // Method to show DatePickerDialog
+    private void showDatePickerDialog() {
+        Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                        Calendar selectedDate = Calendar.getInstance();
+                        selectedDate.set(year, monthOfYear, dayOfMonth);
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                        etDate.setText(sdf.format(selectedDate.getTime()));
+                    }
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+        datePickerDialog.show();
+    }
+
+    // AsyncTask to perform the POST request in the background
     private void saveReservationData() {
         String customerName = etCustomerName.getText().toString();
-        String meal = etMeal.getText().toString();
         String seatingArea = "Inside Restaurant";
         String customerPhoneNumber = etCustomerPhoneNumber.getText().toString();
-        String tableSize = etTableSize.getText().toString();
+        String meal = spMealInside.getSelectedItem().toString();
+        String tableSize = spTableSizeInside.getSelectedItem().toString();
         String date = etDate.getText().toString();
-
 
 
         // Create a JSON object with the data
@@ -124,8 +189,6 @@ public class InsideRestaurant extends AppCompatActivity {
             reservationData.put("seatingArea", seatingArea);
             reservationData.put("tableSize", tableSize);
             reservationData.put("date", date);
-
-
 
 
         } catch (JSONException e) {
@@ -140,9 +203,6 @@ public class InsideRestaurant extends AppCompatActivity {
         editor.putString("seatingArea", seatingArea);
         editor.putString("tableSize", tableSize);
         editor.putString("date", date);
-
-
-
 
 
         editor.apply();
@@ -175,7 +235,7 @@ public class InsideRestaurant extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(InsideRestaurant.this, "Reserved Successfully", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(InsideRestaurant.this, "Reservation successful", Toast.LENGTH_SHORT).show();
                             }
                         });
                         // Redirect to DashboardActivity
@@ -185,7 +245,7 @@ public class InsideRestaurant extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(InsideRestaurant.this, "Reservation Failed", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(InsideRestaurant.this, "Failed to make reservation. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         });
                     }

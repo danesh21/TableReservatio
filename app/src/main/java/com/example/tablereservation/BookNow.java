@@ -30,6 +30,7 @@ public class BookNow extends AppCompatActivity {
          btnInside.setOnClickListener(new View.OnClickListener() {
              @Override
              public void onClick(View v) {
+                 //Declare method
                  openBookingInside();
              }
          });

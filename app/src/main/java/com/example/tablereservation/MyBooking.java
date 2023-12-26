@@ -1,7 +1,6 @@
 package com.example.tablereservation;
 
 // Import statements
-// ...
 
 import static com.example.tablereservation.MainActivity.redirectActivity;
 
@@ -11,14 +10,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,203 +38,211 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 public class MyBooking extends AppCompatActivity {
 
-    private ListView listView;
-    private ArrayAdapter<String> adapter;
-    private ArrayList<String> resultList;
+        private ListView listView;
+        private ArrayAdapter<String> adapter;
+        private ArrayList<String> resultList;
 
-    private ImageButton btnBack;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_my_booking);
-        btnBack = findViewById(R.id.btnDirectMainPage);
-
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                redirectActivity(MyBooking.this, MainActivity.class);
-            }
-        });
-
-        listView = findViewById(R.id.listView);
-
-        resultList = new ArrayList<>();
-
-        // Execute AsyncTask to fetch data from the API
-        new FetchDataTask().execute("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations");
-
-        // Register a long click listener on the ListView items
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                showDeleteConfirmationDialog(position);
-                return true; // Consume the long click event
-            }
-        });
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // Get the selected reservation data
-                String selectedReservation = resultList.get(position);
-
-                // Store the selected reservation data in SharedPreferences
-                SharedPreferences preferences = getSharedPreferences("selected_reservation", MODE_PRIVATE);
-                String customerName = preferences.getString("customerName", "");
-                String customerPhoneNumber = preferences.getString("customerPhoneNumber", "");
-                String meal = preferences.getString("meal", "");
-                String seatingArea = preferences.getString("seatingArea", "");
-                String tableSize = preferences.getString("tableSize", "");
-                String date = preferences.getString("date", "");
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("selectedReservation", selectedReservation);
-                editor.apply();
-
-                // Start the EditReservation activity
-                Intent intent = new Intent(MyBooking.this, EditReservation.class);
-                startActivity(intent);
-            }
-        });
-    }
-
-    private class FetchDataTask extends AsyncTask<String, Void, ArrayList<String>> {
+        private ImageButton btnBack;
 
         @Override
-        protected ArrayList<String> doInBackground(String... params) {
-            String apiUrl = params[0];
-            ArrayList<String> resultList = new ArrayList<>();
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_my_booking);
+            btnBack = findViewById(R.id.btnDirectMainPage);
 
-            try {
-                URL url = new URL(apiUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-
-                InputStream inputStream = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder stringBuilder = new StringBuilder();
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
+            btnBack.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    redirectActivity(MyBooking.this, MainActivity.class);
                 }
+            });
 
-                reader.close();
-                inputStream.close();
-                connection.disconnect();
+            listView = findViewById(R.id.listView);
 
-                String jsonResponse = stringBuilder.toString();
+            resultList = new ArrayList<>();
 
-                // Parse JSON data
-                JSONArray jsonArray = new JSONArray(jsonResponse);
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    String customerName = jsonObject.getString("customerName");
-                    String customerPhoneNumber = jsonObject.getString("customerPhoneNumber");
-                    String meal = jsonObject.getString("meal");
-                    String seatingArea = jsonObject.getString("seatingArea");
-                    String tableSize = jsonObject.getString("tableSize");
-                    String date = jsonObject.getString("date");
+            // Execute AsyncTask to fetch data from the API
+            new FetchDataTask().execute("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations");
 
-                    // Add a map to store key-value pairs for each field
-                    Map<String, String> bookingData = new HashMap<>();
-                    bookingData.put("customerName", customerName);
-                    bookingData.put("customerPhoneNumber", customerPhoneNumber);
-                    bookingData.put("meal", meal);
-                    bookingData.put("seatingArea", seatingArea);
-                    bookingData.put("tableSize", tableSize);
-                    bookingData.put("date", date);
-
-                    // Add the map to the resultList
-                    resultList.add(bookingData.toString());
+            // Register a long click listener on the ListView items
+            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                    showDeleteConfirmationDialog(position);
+                    return true; // Consume the long click event
                 }
+            });
 
-            } catch (IOException | JSONException e) {
-                e.printStackTrace();
-            }
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    // Get the selected reservation data
+                    String selectedReservation = resultList.get(position);
 
-            return resultList;
+                    // Store the selected reservation data in SharedPreferences
+                    SharedPreferences preferences = getSharedPreferences("selected_reservation", MODE_PRIVATE);
+                    String customerName = preferences.getString("customerName", "");
+                    String customerPhoneNumber = preferences.getString("customerPhoneNumber", "");
+                    String meal = preferences.getString("meal", "");
+                    String seatingArea = preferences.getString("seatingArea", "");
+                    String tableSize = preferences.getString("tableSize", "");
+                    String date = preferences.getString("date", "");
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putString("selectedReservation", selectedReservation);
+                    editor.apply();
+
+                    // Start the EditReservation activity
+                    Intent intent = new Intent(MyBooking.this, EditReservation.class);
+                    startActivity(intent);
+                }
+            });
         }
 
-        @Override
-        protected void onPostExecute(ArrayList<String> result) {
-            super.onPostExecute(result);
+        private class FetchDataTask extends AsyncTask<String, Void, ArrayList<String>> {
 
-            resultList = result;
+            @Override
+            protected ArrayList<String> doInBackground(String... params) {
+                String apiUrl = params[0];
+                ArrayList<String> resultList = new ArrayList<>();
 
-            // Populate the ListView with the fetched data
-            adapter = new ArrayAdapter<>(MyBooking.this, R.layout.list_reservation_item,R.id.textViewCustomerName,  resultList);
-            listView.setAdapter(adapter);
-        }
-    }
+                try {
+                    URL url = new URL(apiUrl);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
 
-    private void showDeleteConfirmationDialog(final int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Delete Confirmation")
-                .setMessage("Are you sure you want to delete this reservation?")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        deleteReservation(position);
+                    InputStream inputStream = connection.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        stringBuilder.append(line).append("\n");
                     }
-                })
-                .setNegativeButton("No", null)
-                .show();
-    }
 
-    private void deleteReservation(int position) {
-        // Get the reservation ID from the JSON data at the specified position
-        try {
-            JSONObject jsonObject = new JSONArray(resultList.get(position)).getJSONObject(0);
-            int reservationId = jsonObject.getInt("id");
+                    reader.close();
+                    inputStream.close();
+                    connection.disconnect();
 
-            // Construct the API endpoint for deleting the reservation
-            String apiUrl = "https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations/" + reservationId;
+                    String jsonResponse = stringBuilder.toString();
 
-            // Execute AsyncTask to delete data from the API
-            new DeleteDataTask().execute(apiUrl);
-        } catch (JSONException e) {
-            e.printStackTrace();
+                    // Parse JSON data
+                    JSONArray jsonArray = new JSONArray(jsonResponse);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jsonObject = jsonArray.getJSONObject(i);
+                        String customerName = jsonObject.getString("customerName");
+                        String customerPhoneNumber = jsonObject.getString("customerPhoneNumber");
+                        String meal = jsonObject.getString("meal");
+                        String seatingArea = jsonObject.getString("seatingArea");
+                        String tableSize = jsonObject.getString("tableSize");
+                        String date = jsonObject.getString("date");
+
+                        // Add a map to store key-value pairs for each field
+                        Map<String, String> bookingData = new HashMap<>();
+                        bookingData.put("customerName", customerName);
+                        bookingData.put("customerPhoneNumber", customerPhoneNumber);
+                        bookingData.put("meal", meal);
+                        bookingData.put("seatingArea", seatingArea);
+                        bookingData.put("tableSize", tableSize);
+                        bookingData.put("date", date);
+
+                        // Add the map to the resultList
+                        resultList.add(bookingData.toString());
+                    }
+
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
+
+                return resultList;
+            }
+
+            @Override
+            protected void onPostExecute(ArrayList<String> result) {
+                super.onPostExecute(result);
+
+                resultList = result;
+
+                // Create a custom adapter to display reservation data in list_reservation_item layout
+                CustomReservationAdapter adapter = new CustomReservationAdapter(MyBooking.this, R.layout.list_reservation_item, resultList);
+
+                // Set the adapter to the listView
+                listView.setAdapter(adapter);
+            }
         }
-    }
 
-    private class DeleteDataTask extends AsyncTask<String, Void, Boolean> {
+        private void showDeleteConfirmationDialog(final int position) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Delete Confirmation")
+                    .setMessage("Are you sure you want to delete this reservation?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            deleteReservation(position);
+                        }
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+        }
 
-        @Override
-        protected Boolean doInBackground(String... params) {
-            String apiUrl = params[0];
-
+        private void deleteReservation(int position) {
+            // Get the reservation ID from the JSON data at the specified position
             try {
-                URL url = new URL(apiUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("DELETE");
+                JSONObject jsonObject = new JSONArray(resultList.get(position)).getJSONObject(0);
+                int reservationId = jsonObject.getInt("id");
 
-                int responseCode = connection.getResponseCode();
+                // Construct the API endpoint for deleting the reservation
+                String apiUrl = "https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations/" + reservationId;
 
-                // Check if the delete operation was successful (HTTP 204 No Content)
-                return responseCode == HttpURLConnection.HTTP_NO_CONTENT;
-
-            } catch (IOException e) {
+                // Execute AsyncTask to delete data from the API
+                new DeleteDataTask().execute(apiUrl);
+            } catch (JSONException e) {
                 e.printStackTrace();
-                return false;
             }
         }
 
-        @Override
-        protected void onPostExecute(Boolean success) {
-            super.onPostExecute(success);
+        private class DeleteDataTask extends AsyncTask<String, Void, Boolean> {
 
-            if (success) {
-                Toast.makeText(MyBooking.this, "Reservation deleted", Toast.LENGTH_SHORT).show();
-                // Refresh the data from the API after a successful delete
-                new FetchDataTask().execute("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations");
-            } else {
-                Toast.makeText(MyBooking.this, "Failed to delete reservation", Toast.LENGTH_SHORT).show();
+            @Override
+            protected Boolean doInBackground(String... params) {
+                String apiUrl = params[0];
+
+                try {
+                    URL url = new URL(apiUrl);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("DELETE");
+
+                    int responseCode = connection.getResponseCode();
+
+                    // Check if the delete operation was successful (HTTP 204 No Content)
+                    return responseCode == HttpURLConnection.HTTP_NO_CONTENT;
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(Boolean success) {
+                super.onPostExecute(success);
+
+                if (success) {
+                    Toast.makeText(MyBooking.this, "Reservation deleted", Toast.LENGTH_SHORT).show();
+                    // Refresh the data from the API after a successful delete
+                    new FetchDataTask().execute("https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations");
+                } else {
+                    Toast.makeText(MyBooking.this, "Failed to delete reservation", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
-}
