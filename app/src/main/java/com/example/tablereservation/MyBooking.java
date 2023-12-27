@@ -108,107 +108,104 @@ public class MyBooking extends AppCompatActivity {
             });
         }
 
-        private class FetchDataTask extends AsyncTask<String, Void, ArrayList<String>> {
+    private class FetchDataTask extends AsyncTask<String, Void, ArrayList<String>> {
 
-            @Override
-            protected ArrayList<String> doInBackground(String... params) {
-                String apiUrl = params[0];
-                ArrayList<String> resultList = new ArrayList<>();
+        @Override
+        protected ArrayList<String> doInBackground(String... params) {
+            String apiUrl = params[0];
+            ArrayList<String> resultList = new ArrayList<>();
 
-                try {
-                    URL url = new URL(apiUrl);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
+            try {
+                URL url = new URL(apiUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
 
-                    InputStream inputStream = connection.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                    StringBuilder stringBuilder = new StringBuilder();
-                    String line;
+                InputStream inputStream = connection.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
 
-                    while ((line = reader.readLine()) != null) {
-                        stringBuilder.append(line).append("\n");
-                    }
-
-                    reader.close();
-                    inputStream.close();
-                    connection.disconnect();
-
-                    String jsonResponse = stringBuilder.toString();
-
-                    // Parse JSON data
-                    JSONArray jsonArray = new JSONArray(jsonResponse);
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject jsonObject = jsonArray.getJSONObject(i);
-                        String customerName = jsonObject.getString("customerName");
-                        String customerPhoneNumber = jsonObject.getString("customerPhoneNumber");
-                        String meal = jsonObject.getString("meal");
-                        String seatingArea = jsonObject.getString("seatingArea");
-                        String tableSize = jsonObject.getString("tableSize");
-                        String date = jsonObject.getString("date");
-
-                        // Add a map to store key-value pairs for each field
-                        Map<String, String> bookingData = new HashMap<>();
-                        bookingData.put("customerName", customerName);
-                        bookingData.put("customerPhoneNumber", customerPhoneNumber);
-                        bookingData.put("meal", meal);
-                        bookingData.put("seatingArea", seatingArea);
-                        bookingData.put("tableSize", tableSize);
-                        bookingData.put("date", date);
-
-                        // Add the map to the resultList
-                        resultList.add(bookingData.toString());
-                    }
-
-                } catch (IOException | JSONException e) {
-                    e.printStackTrace();
+                while ((line = reader.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
                 }
 
-                return resultList;
-            }
+                reader.close();
+                inputStream.close();
+                connection.disconnect();
 
-            @Override
-            protected void onPostExecute(ArrayList<String> result) {
-                super.onPostExecute(result);
+                String jsonResponse = stringBuilder.toString();
 
-                resultList = result;
+                // Parse JSON data
+                JSONArray jsonArray = new JSONArray(jsonResponse);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    // Customize this part based on your JSON structure
+                    String customerName = jsonObject.getString("customerName");
+                    String customerPhoneNumber = jsonObject.getString("customerPhoneNumber");
+                    String meal = jsonObject.getString("meal");
+                    String seatingArea = jsonObject.getString("seatingArea");
+                    String tableSize = jsonObject.getString("tableSize");
+                    String date = jsonObject.getString("date");
+                    resultList.add(" Name: " + customerName + "\n" +
+                            "Phone Number: " + customerPhoneNumber + "\n" +
+                            "Meal: " + meal + "\n" +
+                            "Seating Area: " + seatingArea+ "\n" +
+                            "Table Size: " + tableSize + "\n" +
+                            "Date: " + date)
+                    ;
+                }
 
-                // Create a custom adapter to display reservation data in list_reservation_item layout
-                CustomReservationAdapter adapter = new CustomReservationAdapter(MyBooking.this, R.layout.list_reservation_item, resultList);
-
-                // Set the adapter to the listView
-                listView.setAdapter(adapter);
-            }
-        }
-
-        private void showDeleteConfirmationDialog(final int position) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Delete Confirmation")
-                    .setMessage("Are you sure you want to delete this reservation?")
-                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            deleteReservation(position);
-                        }
-                    })
-                    .setNegativeButton("No", null)
-                    .show();
-        }
-
-        private void deleteReservation(int position) {
-            // Get the reservation ID from the JSON data at the specified position
-            try {
-                JSONObject jsonObject = new JSONArray(resultList.get(position)).getJSONObject(0);
-                int reservationId = jsonObject.getInt("id");
-
-                // Construct the API endpoint for deleting the reservation
-                String apiUrl = "https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations/" + reservationId;
-
-                // Execute AsyncTask to delete data from the API
-                new DeleteDataTask().execute(apiUrl);
-            } catch (JSONException e) {
+            } catch (IOException | JSONException e) {
                 e.printStackTrace();
             }
+
+            return resultList;
         }
+
+        @Override
+        protected void onPostExecute(ArrayList<String> result) {
+            super.onPostExecute(result);
+
+            resultList = result;
+
+            // Populate the ListView with the fetched data
+            adapter = new ArrayAdapter<>(MyBooking.this, android.R.layout.simple_list_item_1, resultList);
+            listView.setAdapter(adapter);
+        }
+    }
+
+
+
+    private void showDeleteConfirmationDialog(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Delete Confirmation")
+                .setMessage("Are you sure you want to delete this reservation?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // User confirmed, delete the reservation
+                        deleteReservation(position);
+                    }
+                })
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    private void deleteReservation(int position) {
+        // Get the reservation ID from the JSON data at the specified position
+        try {
+            JSONObject jsonObject = new JSONArray(resultList.get(position)).getJSONObject(0);
+            int reservationId = jsonObject.getInt("id");
+
+            // Construct the API endpoint for deleting the reservation
+            String apiUrl = "https://web.socem.plymouth.ac.uk/COMP2000/ReservationApi/api/Reservations/" + reservationId;
+
+            // Execute AsyncTask to delete data from the API
+            new DeleteDataTask().execute(apiUrl);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
 
         private class DeleteDataTask extends AsyncTask<String, Void, Boolean> {
 
